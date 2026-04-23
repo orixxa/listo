@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Listo - Shared List</title>
 
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
@@ -103,12 +104,14 @@ body.dark .tagline { color: #4ade80; }
 </div>
 
 <script>
+// --- Updated Firebase Config to match listo-19ff4 ---
 const firebaseConfig = {
-  apiKey: "AIzaSyC6LVzU-sATwv6mnTShovOcwi9MbhvlXrY",
-  authDomain: "listo-356ba.firebaseapp.com",
-  projectId: "listo-356ba",
-  storageBucket: "listo-356ba.firebasestorage.app",
-  appId: "1:104729909475:web:fb3bd44800d371b7748dd6"
+  apiKey: "AIzaSyBm8P9681YdOJF_z1Nd0BEMSJzRUfg71Ic",
+  authDomain: "listo-19ff4.firebaseapp.com",
+  projectId: "listo-19ff4",
+  storageBucket: "listo-19ff4.firebasestorage.app",
+  messagingSenderId: "296989598922",
+  appId: "1:296989598922:web:bd79217bf4a9ca1c238033" // Check your Firebase console if this is different
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -118,6 +121,7 @@ const uid = params.get("uid");
 const ocn = params.get("ocn");      
 const dc = params.get("dc");        
 const appTheme = params.get("theme");
+const syncEnabled = params.get("sync") === "true";
 
 let globalItems = [];
 let currentCategory = ocn || ""; 
@@ -142,14 +146,27 @@ if(dc) {
     document.getElementById("catName").style.display = "block";
 }
 
-if(uid){
+// Initial Items from URL for fast loading
+if(params.get("items")) {
+    const rawItems = params.get("items").split(";");
+    globalItems = rawItems.map(raw => {
+        const parts = raw.split("|");
+        return { name: decodeURIComponent(parts[0]), q: decodeURIComponent(parts[1] || ""), price: "", status: "pending" };
+    });
+    renderUI();
+}
+
+// Enable live sync if UID exists and sync=true
+if(uid && (syncEnabled || uid)){
   document.getElementById("liveTag").style.display = "flex";
   db.collection("users").doc(uid).onSnapshot(doc => {
     if(doc.exists){
+      // Skip updates if we are the ones who just wrote them
       if (doc.metadata.hasPendingWrites) return;
-      const dataObj = doc.data();
       
+      const dataObj = doc.data();
       let newItems = [];
+      
       if(currentCategory === "All Items") {
           (dataObj.items || []).forEach(it => newItems.push({...it, _cat: 'root'}));
           if(dataObj.categories) {
@@ -165,10 +182,17 @@ if(uid){
           newItems = (dataObj.items || []).map(it => ({...it, _cat: 'root'}));
       }
       
-      globalItems = newItems;
-      renderUI();
+      if(newItems.length > 0) {
+          globalItems = newItems;
+          renderUI();
+      }
     }
-  }, err => console.error("Firestore Error:", err));
+  }, err => {
+      console.error("Firestore Error:", err);
+      if(err.code === 'permission-denied') {
+          console.warn("Check your Firestore rules for public access or valid UID");
+      }
+  });
 }
 
 function updateTotalDisplay() {
@@ -182,7 +206,7 @@ function updateTotalDisplay() {
 function renderUI(){
   const listDiv = document.getElementById("list");
   
-  // Save focus state before re-rendering
+  // Save focus state
   const activeEl = document.activeElement;
   const activeIdx = (activeEl && activeEl.classList.contains('price-input')) ? 
                     Array.from(document.querySelectorAll('.price-input')).indexOf(activeEl) : -1;
@@ -223,7 +247,6 @@ function renderUI(){
   });
   updateTotalDisplay();
 
-  // Restore focus if needed
   if (activeIdx !== -1) {
     const inputs = document.querySelectorAll('.price-input');
     if (inputs[activeIdx]) inputs[activeIdx].focus();
@@ -239,7 +262,7 @@ window.deleteItem = function(i) {
 }
 window.updatePrice = function(i, val){
   globalItems[i].price = val;
-  updateTotalDisplay(); // Total update karein bina re-render kiye
+  updateTotalDisplay();
   scheduleSync(globalItems[i]);
 }
 window.updateStatus = function(i, stat){
@@ -263,7 +286,7 @@ function scheduleSync(targetItem){
         if (currentCategory === "" || currentCategory === "root" || currentCategory === "Show Item") ref.update({ items: cleanData });
         else ref.update({ [`categories.${currentCategory}.items`]: cleanData });
     }
-  }, 1000); // 1 second buffer for typing
+  }, 800);
 }
 </script>
 </body>
