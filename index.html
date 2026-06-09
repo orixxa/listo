@@ -214,23 +214,30 @@ if(itemsParam) {
   } catch(e) { listDiv.innerHTML = "Error parsing QR"; }
 }
 
-// 4. Firestore Sync
+// 4. Firestore Sync (Fixed for Realtime App Updates)
 if(uid){
   document.getElementById("liveTag").style.display = "flex";
   db.collection("users").doc(uid).onSnapshot(doc => {
-    if(doc.exists && !doc.metadata.hasPendingWrites){
+    if(doc.exists){
       const dObj = doc.data();
+      let remoteItems = [];
+      
       if(currentCategory === "Full List") {
-          let merged = [];
-          (dObj.items || []).forEach(it => merged.push({...it, _cat: 'root'}));
-          if(dObj.categories) Object.keys(dObj.categories).forEach(k => (dObj.categories[k].items || []).forEach(it => merged.push({...it, _cat: k})));
-          globalItems = merged;
+          (dObj.items || []).forEach(it => remoteItems.push({ name: it.name, q: it.q || it.quantity || "", price: it.price || it.p || "", status: it.status || "pending", _cat: 'root' }));
+          if(dObj.categories) {
+              Object.keys(dObj.categories).forEach(k => {
+                  (dObj.categories[k].items || []).forEach(it => remoteItems.push({ name: it.name, q: it.q || it.quantity || "", price: it.price || it.p || "", status: it.status || "pending", _cat: k }));
+              });
+          }
       } else if (currentCategory && currentCategory !== "root" && dObj.categories && dObj.categories[currentCategory]) {
-          globalItems = (dObj.categories[currentCategory].items || []).map(it => ({...it, _cat: currentCategory}));
+          remoteItems = (dObj.categories[currentCategory].items || []).map(it => ({ name: it.name, q: it.q || it.quantity || "", price: it.price || it.p || "", status: it.status || "pending", _cat: currentCategory }));
       } else {
-          globalItems = (dObj.items || []).map(it => ({...it, _cat: 'root'}));
+          remoteItems = (dObj.items || []).map(it => ({ name: it.name, q: it.q || it.quantity || "", price: it.price || it.p || "", status: it.status || "pending", _cat: 'root' }));
       }
-      sortItems(); renderUI();
+      
+      globalItems = remoteItems;
+      sortItems(); 
+      renderUI();
     }
   });
 }
@@ -249,8 +256,8 @@ function renderUI(){
   if(globalItems.length === 0){ listDiv.innerHTML = "<div style='text-align:center; color:gray; padding:20px;'>List is empty</div>"; totalDiv.innerText = "₹0"; return; }
 
   globalItems.forEach((it, i) => {
-    const p = it.price || it.p || "0";
-    const q = it.q || it.quantity || "";
+    const p = it.price || "";
+    const q = it.q || "";
     if(it.status === "done") total += Number(p);
 
     const div = document.createElement("div"); div.className = "item-card " + it.status;
@@ -276,7 +283,7 @@ function renderUI(){
   totalDiv.innerText = "₹" + total;
 }
 
-window.updatePrice = function(i, val){ globalItems[i].price = val; let t = 0; globalItems.forEach(it => { if(it.status === "done") t += Number(it.price || it.p || 0); }); totalDiv.innerText = "₹" + t; scheduleSync(); }
+window.updatePrice = function(i, val){ globalItems[i].price = val; let t = 0; globalItems.forEach(it => { if(it.status === "done") t += Number(it.price || 0); }); totalDiv.innerText = "₹" + t; scheduleSync(); }
 
 window.updateStatus = function(i, stat){ globalItems[i].status = stat; sortItems(); renderUI(); scheduleSync(); }
 
@@ -285,16 +292,27 @@ function scheduleSync(){
   syncTimeout = setTimeout(() => {
     if(!uid) return;
     const ref = db.collection("users").doc(uid);
-    const clean = globalItems.map(it => ({ name: it.name, q: it.q || it.quantity || "", price: it.price || it.p || "", status: it.status }));
     
     if (currentCategory === "Full List") {
         let updates = {}; let root = []; let groups = {};
-        globalItems.forEach(it => { let c = { name: it.name, q: it.q||it.quantity||"", price: it.price||it.p||"", status: it.status }; if(it._cat === 'root') root.push(c); else { if(!groups[it._cat]) groups[it._cat] = []; groups[it._cat].push(c); } });
-        updates["items"] = root; Object.keys(groups).forEach(k => updates["categories." + k + ".items"] = groups[k]);
+        globalItems.forEach(it => { 
+            let c = { name: it.name, q: it.q || "", quantity: it.q || "", price: it.price || "", p: it.price || "", status: it.status }; 
+            if(it._cat === 'root') root.push(c); 
+            else { 
+                if(!groups[it._cat]) groups[it._cat] = []; 
+                groups[it._cat].push(c); 
+            } 
+        });
+        updates["items"] = root; 
+        Object.keys(groups).forEach(k => updates["categories." + k + ".items"] = groups[k]);
         ref.update(updates);
     } else if (currentCategory && currentCategory !== "root") {
-        let obj = {}; obj["categories." + currentCategory + ".items"] = clean; ref.update(obj);
+        let obj = {}; 
+        let clean = globalItems.map(it => ({ name: it.name, q: it.q || "", quantity: it.q || "", price: it.price || "", p: it.price || "", status: it.status }));
+        obj["categories." + currentCategory + ".items"] = clean; 
+        ref.update(obj);
     } else {
+        let clean = globalItems.map(it => ({ name: it.name, q: it.q || "", quantity: it.q || "", price: it.price || "", p: it.price || "", status: it.status }));
         ref.update({ items: clean });
     }
   }, 1000);
