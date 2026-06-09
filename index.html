@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>Listo - Shared List</title>
+<title>Listo - Live Shared List</title>
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -28,86 +28,52 @@ html.dark, body.dark {
 }
 
 html { background-color: var(--bg1); transition: background-color 0.3s ease; }
-
 body::before {
   content: ""; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background: linear-gradient(-45deg, var(--bg1), var(--bg2), var(--bg3), var(--bg4));
   background-size: 400% 400%; animation: bg 8s ease-in-out infinite; z-index: -1;
 }
-
-body {
-  margin: 0; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center;
-  padding: 10px; box-sizing: border-box; min-height: 100vh; width: 100%;
-}
-
+body { margin: 0; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 10px; box-sizing: border-box; min-height: 100vh; width: 100%; }
 @keyframes bg { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
-.logo { width: 90px; height: auto; margin-top: 10px; margin-bottom: 15px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+.logo { width: 80px; height: auto; margin: 10px 0; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+.container { max-width: 500px; width: 100%; }
+.card { background: var(--card); color: var(--text); padding: 15px 20px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box; }
 
-.container { max-width: 500px; width: 100%; margin-bottom: 20px; }
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.stats { display: flex; flex-direction: column; gap: 2px; }
+.stat-lbl { font-size: 10px; font-weight: 800; color: #16a34a; text-transform: uppercase; }
+.stat-val { font-size: 14px; font-weight: 900; }
 
-.card {
-  background: var(--card); color: var(--text); padding: 15px 20px; border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1); transition: all 0.3s ease; width: 100%; box-sizing: border-box;
-}
+.sync-status { font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 10px; display: flex; align-items: center; gap: 5px; }
+.status-online { background: #dcfce7; color: #16a34a; }
+.status-offline { background: #fee2e2; color: #ef4444; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pulse { animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { transform: scale(0.9); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.5; } 100% { transform: scale(0.9); opacity: 1; } }
 
-.header-top { position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; min-height: 45px; }
-.stats-box { position: absolute; left: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
-.stat-row { display: flex; align-items: baseline; gap: 4px; }
-.title-box { display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2; }
-.toggle-box { position: absolute; right: 0; display: flex; justify-content: flex-end; z-index: 3; }
-
-.stat-lbl { margin: 0; font-size: 10px; color: #16a34a; font-weight: bold; text-transform: uppercase; }
-.stat-val { margin: 0; font-size: 13px; font-weight: 800; color: var(--text); }
-
-.title { margin: 0; font-size: 20px; font-weight: bold; color: var(--text); white-space: nowrap; }
-
-.live-indicator { display: flex; align-items: center; gap: 5px; margin-top: 4px; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #ef4444; background: #fee2e2; padding: 3px 8px; border-radius: 12px; }
-.live-dot { width: 6px; height: 6px; background: #ef4444; border-radius: 50%; animation: pulse 1s infinite; }
-body.dark .live-indicator { background: #7f1d1d; color: #fca5a5; }
-@keyframes pulse { 0% { transform: scale(0.9); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.5; } 100% { transform: scale(0.9); opacity: 1; } }
-
-.toggle-btn {
-  background: var(--inputBg); border: 1px solid var(--inputBorder); border-radius: 50%;
-  width: 38px; height: 38px; font-size: 16px; cursor: pointer; display: flex;
-  justify-content: center; align-items: center; color: var(--text);
-}
-
-.cat-badge { text-align: center; font-size: 13px; font-weight: 600; color: var(--primary); background: #eef2ff; padding: 4px 15px; border-radius: 20px; width: fit-content; margin: 0 auto 15px; }
+.cat-badge { text-align: center; font-size: 12px; font-weight: 700; color: var(--primary); background: #eef2ff; padding: 5px 15px; border-radius: 12px; margin-bottom: 15px; width: fit-content; margin-left: auto; margin-right: auto; }
 body.dark .cat-badge { background: #312e81; color: #a5b4fc; }
 
-.item-card {
-  background: var(--itemBg); padding: 15px; border-radius: 12px; margin-bottom: 12px;
-  border: 1px solid var(--bg3); width: 100%; box-sizing: border-box; transition: all 0.2s ease;
-}
+.item-card { background: var(--itemBg); padding: 15px; border-radius: 16px; margin-bottom: 12px; border: 1px solid var(--bg3); transition: 0.2s; }
 .item-card.done { background: var(--doneBg); border-color: var(--doneBorder); }
 .item-card.na { background: var(--naBg); border-color: var(--naBorder); }
 
-.item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.item-info { display: flex; align-items: center; gap: 8px; flex: 1; }
-.item-emoji { font-size: 20px; }
-.item-name-wrap { display: flex; flex-direction: column; }
-.item-text { font-size: 16px; font-weight: bold; color: var(--text); }
-.qty-text { color: var(--primary); font-weight: 700; font-size: 13px; }
+.item-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.item-emoji { font-size: 22px; }
+.item-info { flex: 1; display: flex; flex-direction: column; }
+.item-name { font-size: 16px; font-weight: 700; }
+.item-qty { font-size: 12px; color: var(--primary); font-weight: bold; }
 
-.status-label { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }
-.status-label.done { background: var(--doneText); color: white; }
-.status-label.na { background: var(--naText); color: white; }
-
-.price-input {
-  width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--inputBorder);
-  background: var(--inputBg); color: var(--text); margin-bottom: 8px; box-sizing: border-box; outline: none; font-size: 14px;
-}
-
-.row { display: flex; gap: 10px; }
-.btn { flex: 1; padding: 12px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; }
+.price-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--inputBorder); background: var(--inputBg); color: var(--text); outline: none; font-size: 14px; margin-bottom: 10px; }
+.btn-group { display: flex; gap: 10px; }
+.btn { flex: 1; padding: 12px; border: none; border-radius: 10px; color: white; font-weight: 800; cursor: pointer; font-size: 12px; }
 .btn-avail { background: #22c55e; }
 .btn-na { background: #ef4444; }
 
-.tagline { text-align: center; font-size: 13px; color: #16a34a; font-weight: 600; font-style: italic; margin-top: 15px; }
+.footer-text { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 20px; font-weight: 500; }
 </style>
 </head>
-
 <body>
 
 <img src="https://image2url.com/r2/default/images/1774860458918-c6f7a05c-ca26-46e6-96fc-a7648f576bb0.png" class="logo">
@@ -115,44 +81,26 @@ body.dark .cat-badge { background: #312e81; color: #a5b4fc; }
 <div class="container">
   <div class="card">
     <div class="header-top">
-      <div class="stats-box">
-        <div class="stat-row"><span class="stat-lbl">Items:</span> <span id="itemCountDisplay" class="stat-val">0</span></div>
-        <div class="stat-row"><span class="stat-lbl">Bill:</span> <span id="totalDisplay" class="stat-val">₹0</span></div>
+      <div class="stats">
+        <div style="display:flex; gap:10px;">
+            <div><span class="stat-lbl">Items</span><div id="count" class="stat-val">0</div></div>
+            <div><span class="stat-lbl">Total</span><div id="total" class="stat-val">₹0</div></div>
+        </div>
       </div>
-      <div class="title-box">
-        <h2 class="title" id="pageTitle">Shared List</h2>
-        <div class="live-indicator" id="liveTag" style="display:none;"><span class="live-dot"></span> Live</div>
+      <div id="syncIndicator" class="sync-status status-offline">
+        <div class="dot pulse"></div> <span id="syncText">Connecting...</span>
       </div>
-      <div class="toggle-box">
-        <button id="themeToggle" class="toggle-btn" onclick="toggleTheme()">🌙</button>
-      </div>
+      <button onclick="toggleTheme()" style="background:none; border:none; font-size:20px; cursor:pointer;">🌓</button>
     </div>
-    
-    <div id="catName" class="cat-badge" style="display:none;"></div>
-    <div id="list">
-      <div style="text-align:center; color:#94a3b8; padding:40px;">Loading List...</div>
-    </div>
+
+    <div id="catDisplay" class="cat-badge">Loading...</div>
+    <div id="list"></div>
   </div>
-  <p class="tagline">Listo: Shopping simple, digital and live!</p>
+  <p class="footer-text">Listo: Making shopping digital & simple.</p>
 </div>
 
 <script>
-// 1. Emoji Dictionary
-const emojiMap = {
-    "apple": "🍎", "milk": "🥛", "bread": "🍞", "egg": "🥚", "water": "💧", "potato": "🥔", "onion": "🧅",
-    "tomato": "🍅", "chicken": "🍗", "rice": "🍚", "oil": "🧴", "sugar": "🍬", "salt": "🧂", "soap": "🧼",
-    "biscuit": "🍪", "banana": "🍌", "mango": "🥭", "orange": "🍊", "paneer": "🧀", "cheese": "🧀",
-    "detergent": "🧼", "shampoo": "🧴", "toothpaste": "🪥", "brush": "🪥", "medicine": "💊", "tablet": "💊",
-    "pen": "🖊️", "notebook": "📓", "book": "📖", "mobile": "📱", "laptop": "💻", "clothes": "👕"
-};
-
-function getEmoji(name) {
-    const n = name.toLowerCase();
-    for (let key in emojiMap) { if (n.includes(key)) return emojiMap[key]; }
-    return "🛒";
-}
-
-// 2. Firebase Config
+// 1. Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyBbBsz8FgD6_5WKbCvfqtEkPLa9q_PIhuA",
   authDomain: "listo-356ba.firebaseapp.com",
@@ -164,108 +112,119 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// 3. App State
+// 2. URL Parameters
 const params = new URLSearchParams(location.search);
 const uid = params.get("uid");
-const ocn = params.get("ocn") || "Show Item"; // Original Category Name
-const itemsParam = params.get("items"); // Fallback items
+const ocn = params.get("ocn") || ""; // Original Category Name
 let globalItems = [];
 let syncTimeout;
 
-function toggleTheme(){
-  document.body.classList.toggle("dark");
-  document.documentElement.classList.toggle("dark");
-  localStorage.setItem("theme", document.body.classList.contains("dark"));
+function toggleTheme() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("theme", document.body.classList.contains("dark"));
 }
-if(localStorage.getItem("theme") === "true") toggleTheme();
+if(localStorage.getItem("theme") === "true") document.body.classList.add("dark");
 
-// 4. Initial Load (from URL items)
-if (itemsParam) {
-    globalItems = itemsParam.split(';').map(it => {
-        const [name, q] = it.split('|');
-        return { name: decodeURIComponent(name), q: decodeURIComponent(q || ""), price: "", status: "pending" };
+// 3. Emoji System
+const emojiMap = { "apple":"🍎","milk":"🥛","egg":"🥚","bread":"🍞","water":"💧","onion":"🧅","potato":"🥔","tomato":"🍅","oil":"🧴","sugar":"🍬","salt":"🧂","chicken":"🍗","meat":"🥩","fish":"🐟","soap":"🧼","shampoo":"🧴","medicine":"💊","pen":"🖊️" };
+function getEmoji(name) {
+    const n = name.toLowerCase();
+    for (let k in emojiMap) if (n.includes(k)) return emojiMap[k];
+    return "🛒";
+}
+
+// 4. Update Sync Status UI
+function setStatus(online) {
+    const el = document.getElementById("syncIndicator");
+    const txt = document.getElementById("syncText");
+    el.className = `sync-status ${online ? 'status-online' : 'status-offline'}`;
+    txt.innerText = online ? "Live Sync" : "Offline";
+}
+
+// 5. 🔥 Powerful Live Listener
+if (uid) {
+    db.collection("users").doc(uid).onSnapshot(doc => {
+        if (doc.exists) {
+            setStatus(true);
+            const data = doc.data();
+            
+            // Logic to find correct category
+            if (ocn === "" || ocn === "Show Item") {
+                globalItems = data.items || [];
+                document.getElementById("catDisplay").innerText = "Main List";
+            } else if (data.categories && data.categories[ocn]) {
+                globalItems = data.categories[ocn].items || [];
+                document.getElementById("catDisplay").innerText = ocn;
+            } else {
+                document.getElementById("catDisplay").innerText = "Category not found";
+            }
+            renderUI();
+        }
+    }, err => {
+        console.error(err);
+        setStatus(false);
     });
-    renderUI();
-}
-
-// 5. Live Sync (Firestore)
-if(uid) {
-  document.getElementById("liveTag").style.display = "flex";
-  db.collection("users").doc(uid).onSnapshot(doc => {
-    if(doc.exists && !doc.metadata.hasPendingWrites) {
-      const data = doc.data();
-      if (ocn === "Show Item" || ocn === "") {
-          globalItems = data.items || [];
-      } else if (data.categories && data.categories[ocn]) {
-          globalItems = data.categories[ocn].items || [];
-          document.getElementById("catName").innerText = ocn;
-          document.getElementById("catName").style.display = "block";
-      }
-      renderUI();
-    }
-  });
 }
 
 function renderUI() {
-  const listDiv = document.getElementById("list");
-  listDiv.innerHTML = "";
-  let total = 0;
-  
-  document.getElementById("itemCountDisplay").innerText = globalItems.length;
-
-  globalItems.forEach((it, i) => {
-    if(it.status === "done") total += Number(it.price || 0);
-    const card = document.createElement("div");
-    card.className = `item-card ${it.status}`;
+    const listDiv = document.getElementById("list");
+    listDiv.innerHTML = "";
+    let totalSpent = 0;
     
-    card.innerHTML = `
-      <div class="item-header">
-        <div class="item-info">
-          <span class="item-emoji">${getEmoji(it.name)}</span>
-          <div class="item-name-wrap">
-            <span class="item-text">${it.name}</span>
-            ${it.q ? `<span class="qty-text">${it.q}</span>` : ''}
-          </div>
-        </div>
-        ${it.status !== 'pending' ? `<span class="status-label ${it.status}">${it.status === 'done' ? 'Avail' : 'N/A'}</span>` : ''}
-      </div>
-      <input type="number" class="price-input" placeholder="Enter Price ₹" value="${it.price || ''}" oninput="updateItem(${i}, 'price', this.value)">
-      ${it.status === "pending" ? `
-        <div class="row">
-          <button class="btn btn-avail" onclick="updateItem(${i}, 'status', 'done')">Available</button>
-          <button class="btn btn-na" onclick="updateItem(${i}, 'status', 'na')">N/A</button>
-        </div>
-      ` : ''}
-    `;
-    listDiv.appendChild(card);
-  });
-  document.getElementById("totalDisplay").innerText = "₹" + total;
+    document.getElementById("count").innerText = globalItems.length;
+
+    globalItems.forEach((it, i) => {
+        if (it.status === "done") totalSpent += Number(it.price || 0);
+        
+        const card = document.createElement("div");
+        card.className = `item-card ${it.status}`;
+        card.innerHTML = `
+            <div class="item-row">
+                <span class="item-emoji">${getEmoji(it.name)}</span>
+                <div class="item-info">
+                    <span class="item-name">${it.name}</span>
+                    ${it.q ? `<span class="item-qty">${it.q}</span>` : ''}
+                </div>
+                ${it.status !== 'pending' ? `<span class="status-label ${it.status}">${it.status==='done'?'Available':'N/A'}</span>` : ''}
+            </div>
+            <input type="number" class="price-input" value="${it.price || ''}" placeholder="Enter Price ₹" oninput="updateLocal(${i}, 'price', this.value)">
+            ${it.status === 'pending' ? `
+                <div class="btn-group">
+                    <button class="btn btn-avail" onclick="updateLocal(${i}, 'status', 'done')">Available</button>
+                    <button class="btn btn-na" onclick="updateLocal(${i}, 'status', 'na')">N/A</button>
+                </div>
+            ` : ''}
+        `;
+        listDiv.appendChild(card);
+    });
+    document.getElementById("total").innerText = "₹" + totalSpent;
 }
 
-window.updateItem = function(index, field, value) {
-    globalItems[index][field] = value;
-    if (field === 'status') renderUI(); // Re-render for status change (buttons disappear)
-    else {
-        // Just update total bill UI for price typing to keep it fast
-        let t = 0; globalItems.forEach(it => { if(it.status === "done") t += Number(it.price || 0); });
-        document.getElementById("totalDisplay").innerText = "₹" + t;
-    }
-    scheduleSync();
+// 6. Typing and Status Update
+window.updateLocal = function(idx, field, val) {
+    globalItems[idx][field] = val;
+    if (field === 'status') renderUI(); 
+    
+    // Update total immediately for UI feel
+    let t = 0; globalItems.forEach(it => { if(it.status==='done') t += Number(it.price||0); });
+    document.getElementById("total").innerText = "₹" + t;
+
+    scheduleCloudSync();
 };
 
-function scheduleSync() {
-  clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(() => {
-    if(!uid) return;
-    const ref = db.collection("users").doc(uid);
-    const cleanItems = globalItems.map(it => ({ name: it.name, q: it.q || "", price: it.price || "", status: it.status }));
-    
-    if (ocn === "Show Item" || ocn === "") {
-        ref.update({ items: cleanItems });
-    } else {
-        ref.update({ [`categories.${ocn}.items`]: cleanItems });
-    }
-  }, 1000); // 1 sec debounce for smooth typing
+function scheduleCloudSync() {
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(() => {
+        if (!uid) return;
+        const ref = db.collection("users").doc(uid);
+        const clean = globalItems.map(it => ({ name: it.name, q: it.q || "", price: it.price || "", status: it.status }));
+        
+        if (ocn === "" || ocn === "Show Item") {
+            ref.update({ items: clean });
+        } else {
+            ref.update({ [`categories.${ocn}.items`]: clean });
+        }
+    }, 800); 
 }
 </script>
 </body>
