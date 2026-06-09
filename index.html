@@ -94,21 +94,14 @@ body.dark .qty-text { color: #a5b4fc; }
 .status-label.done { color: var(--doneText); }
 .status-label.na { color: var(--naText); }
 
-/* 🔥 New Action Icons Container */
 .action-icons { display: flex; align-items: center; gap: 4px; }
 
-/* 🔥 Edit Icon Styling */
 .edit-icon { color: #3b82f6; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 5px; border-radius: 50%; }
 .edit-icon:active { transform: scale(0.8); background: rgba(0,0,0,0.05); }
 .edit-icon svg { width: 18px; height: 18px; }
-.item-card.done .edit-icon { color: #60a5fa; }
-.item-card.na .edit-icon { color: #f87171; }
 
 .delete-icon { color: #94a3b8; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 5px; border-radius: 50%; }
-.delete-icon:active { transform: scale(0.8); background: rgba(0,0,0,0.05); }
 .delete-icon svg { width: 18px; height: 18px; }
-.item-card.na .delete-icon { color: #f87171; }
-.item-card.done .delete-icon { color: #4ade80; }
 
 .price-input {
   width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--inputBorder);
@@ -117,12 +110,10 @@ body.dark .qty-text { color: #a5b4fc; }
 
 .row { display: flex; gap: 10px; }
 .btn { flex: 1; padding: 10px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; transition: 0.1s; font-size: 13px; }
-.btn:active { transform: scale(0.95); }
 .btn-avail { background: #22c55e; }
 .btn-na { background: #ef4444; }
 
 .tagline { text-align: center; font-size: 13px; color: #16a34a; font-weight: 600; font-style: italic; margin-top: 15px; }
-body.dark .tagline { color: #4ade80; }
 </style>
 </head>
 
@@ -131,42 +122,33 @@ body.dark .tagline { color: #4ade80; }
 <img src="https://image2url.com/r2/default/images/1774860458918-c6f7a05c-ca26-46e6-96fc-a7648f576bb0.png" class="logo">
 <div class="container">
   <div class="card">
-    
     <div class="header-top">
-      
       <div class="stats-box">
-        <div class="stat-row">
-          <span class="stat-lbl">Total Items:</span>
-          <span id="itemCountDisplay" class="stat-val">0</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-lbl">Total Bill:</span>
-          <span id="totalDisplay" class="stat-val">₹0</span>
-        </div>
+        <div class="stat-row"><span class="stat-lbl">Items:</span> <span id="itemCountDisplay" class="stat-val">0</span></div>
+        <div class="stat-row"><span class="stat-lbl">Bill:</span> <span id="totalDisplay" class="stat-val">₹0</span></div>
       </div>
-      
       <div class="title-box">
         <h2 class="title">Shared List</h2>
-        <div class="live-indicator" id="liveTag" style="display:none;">
-          <span class="live-dot"></span> Live
-        </div>
+        <div class="live-indicator" id="liveTag" style="display:none;"><span class="live-dot"></span> Live</div>
       </div>
-
-      <div class="toggle-box">
-        <button id="themeToggle" class="toggle-btn" onclick="toggleTheme()">🌙</button>
-      </div>
+      <div class="toggle-box"><button id="themeToggle" class="toggle-btn" onclick="toggleTheme()">🌙</button></div>
     </div>
-    
     <div id="catName" class="cat-badge"></div>
-    <div id="list" style="padding-bottom: 10px;">
-      <div style="text-align:center; color:#94a3b8; font-style:italic; padding:20px;">Scanning...</div>
-    </div>
+    <div id="list" style="padding-bottom: 10px;"><div style="text-align:center; color:#94a3b8; font-style:italic; padding:20px;">Scanning...</div></div>
   </div>
   <p class="tagline">Listo apnaiye: List banegi digital, shopping hogi simple!</p>
 </div>
 
 <script>
-// 🔥 Firebase Init
+// 1. Emoji Dictionary
+const emojiDict = { "apple":"🍎","milk":"🥛","egg":"🥚","bread":"🍞","water":"💧","onion":"🧅","potato":"🥔","tomato":"🍅","oil":"🧴","sugar":"🍬","salt":"🧂","chicken":"🍗","meat":"🥩","soap":"🧼","shampoo":"🧴","medicine":"💊","pen":"🖊️","biscuit":"🍪" };
+function getEmoji(name) {
+    const n = name.toLowerCase();
+    for (let k in emojiDict) if (n.includes(k)) return emojiDict[k];
+    return "🛒";
+}
+
+// 2. Firebase Init
 const firebaseConfig = {
   apiKey: "AIzaSyBbBsz8FgD6_5WKbCvfqtEkPLa9q_PIhuA",
   authDomain: "listo-356ba.firebaseapp.com",
@@ -174,16 +156,17 @@ const firebaseConfig = {
   storageBucket: "listo-356ba.firebasestorage.app",
   messagingSenderId: "104729909475",
   appId: "1:104729909475:web:fb3bd44800d371b7748dd6"
-};firebase.initializeApp(firebaseConfig);
+};
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 const params = new URLSearchParams(location.search);
 const uid = params.get("uid");
 const data = params.get("data");
-const appTheme = params.get("theme");
-
+const itemsParam = params.get("items");
+const ocnParam = params.get("ocn");
 let globalItems = [];
-let currentCategory = "";
+let currentCategory = ocnParam || "";
 let syncTimeout;
 
 const listDiv = document.getElementById("list");
@@ -199,231 +182,123 @@ function toggleTheme(){
   localStorage.setItem("theme", isDark);
   themeBtn.innerText = isDark ? "☀️" : "🌙";
 }
-
-if(appTheme === "dark" || localStorage.getItem("theme") === "true") {
-    document.documentElement.classList.add("dark");
-    document.body.classList.add("dark");
-    themeBtn.innerText = "☀️";
-}
+if(localStorage.getItem("theme") === "true") toggleTheme();
 
 function sortItems() {
   const order = { "pending": 1, "done": 2, "na": 3 };
   globalItems.sort((a, b) => order[a.status] - order[b.status]);
 }
-// 🔥 QR Parse
-if(data){
+
+// 3. QR/URL Parse
+if(itemsParam) {
+    globalItems = itemsParam.split(';').map(it => {
+        const p = it.split('|');
+        return { name: decodeURIComponent(p[0]), q: decodeURIComponent(p[1]||""), price: "", status: "pending", _cat: currentCategory||'root' };
+    });
+    if(currentCategory) { catDiv.innerText = currentCategory; catDiv.style.display = "block"; }
+    renderUI();
+} else if(data){
   try {
     const decoded = decodeURIComponent(data);
     let lines = decoded.split('\n').map(l => l.trim()).filter(l => l !== "");
-    let tempItems = [];
-
     lines.forEach(line => {
         if (line.toUpperCase().includes("LISTO")) {
             let catRawName = line.replace(/LISTO/i, "").replace(/:$/, "").trim();
-            if(catRawName === "Show Item" || catRawName === "Full List"){
-                currentCategory = catRawName === "Full List" ? "Full List" : "root"; 
-            } else {
-                currentCategory = catRawName;
-            }
-            if(catRawName) {
-                catDiv.innerText = catRawName;
-                catDiv.style.display = "block";
-            }
+            currentCategory = (catRawName === "Show Item" || catRawName === "Full List") ? (catRawName === "Full List" ? "Full List" : "root") : catRawName;
+            if(catRawName) { catDiv.innerText = catRawName; catDiv.style.display = "block"; }
         } else {
-            tempItems.push({ 
-                name: line.replace(/^\d+[\.\)]\s*/, ""), 
-                price: "", 
-                status: "pending",
-                _cat: currentCategory === "Full List" ? "root" : currentCategory 
-            });
+            globalItems.push({ name: line.replace(/^\d+[\.\)]\s*/, ""), price: "", status: "pending", _cat: currentCategory === "Full List" ? "root" : currentCategory });
         }
     });
-    globalItems = tempItems;
-    sortItems();
-    renderUI();
-  } catch(e) {
-    listDiv.innerHTML = "<div style='text-align:center; color:#ef4444;'>Error parsing QR</div>";
-  }
+    sortItems(); renderUI();
+  } catch(e) { listDiv.innerHTML = "Error parsing QR"; }
 }
 
-// 🔥 Firestore Dual Sync
+// 4. Firestore Sync
 if(uid){
   document.getElementById("liveTag").style.display = "flex";
   db.collection("users").doc(uid).onSnapshot(doc => {
-    if(doc.exists){
-      if (doc.metadata.hasPendingWrites) return;
-
-      const dataObj = doc.data();
+    if(doc.exists && !doc.metadata.hasPendingWrites){
+      const dObj = doc.data();
       if(currentCategory === "Full List") {
-          let mergedItems = [];
-          (dataObj.items || []).forEach(it => mergedItems.push({...it, _cat: 'root'}));
-          if(dataObj.categories) {
-              Object.keys(dataObj.categories).forEach(catKey => {
-                  (dataObj.categories[catKey].items || []).forEach(it => mergedItems.push({...it, _cat: catKey}));
-              });
-          }
-          globalItems = mergedItems;
-      } 
-      else if (currentCategory && currentCategory !== "root" && dataObj.categories && dataObj.categories[currentCategory]) {
-          globalItems = (dataObj.categories[currentCategory].items || []).map(it => ({...it, _cat: currentCategory}));
+          let merged = [];
+          (dObj.items || []).forEach(it => merged.push({...it, _cat: 'root'}));
+          if(dObj.categories) Object.keys(dObj.categories).forEach(k => (dObj.categories[k].items || []).forEach(it => merged.push({...it, _cat: k})));
+          globalItems = merged;
+      } else if (currentCategory && currentCategory !== "root" && dObj.categories && dObj.categories[currentCategory]) {
+          globalItems = (dObj.categories[currentCategory].items || []).map(it => ({...it, _cat: currentCategory}));
       } else {
-          globalItems = (dataObj.items || []).map(it => ({...it, _cat: 'root'}));
+          globalItems = (dObj.items || []).map(it => ({...it, _cat: 'root'}));
       }
-
-      sortItems();
-      renderUI();
+      sortItems(); renderUI();
     }
   });
 }
 
-// 🔥 Edit Quantity Function
 window.editItem = function(i) {
-  let currentQty = globalItems[i].q || "";
-  let newQty = prompt("Update Quantity for '" + globalItems[i].name + "':\n(e.g., 2 Kg, 5 Piece, etc.)", currentQty);
-  
-  // If user clicked OK and didn't cancel
-  if (newQty !== null) {
-      globalItems[i].q = newQty.trim();
-      renderUI();
-      scheduleSync();
-  }
+  let newQty = prompt("Update Quantity for '" + globalItems[i].name + "':", globalItems[i].q || "");
+  if (newQty !== null) { globalItems[i].q = newQty.trim(); renderUI(); scheduleSync(); }
 }
 
-// 🔥 Delete Item with Alert
 window.deleteItem = function(i) {
-  if (confirm("Are you sure you want to delete '" + globalItems[i].name + "'?\n\nPress OK to delete.")) {
-      globalItems.splice(i, 1);
-      renderUI();
-      scheduleSync();
-  }
+  if (confirm("Delete '" + globalItems[i].name + "'?")) { globalItems.splice(i, 1); renderUI(); scheduleSync(); }
 }
 
-// 🔥 Render UI
 function renderUI(){
-  listDiv.innerHTML = "";
-  let total = 0;
-  
-  itemCountDiv.innerText = globalItems.length;
-
-  if(globalItems.length === 0){
-      listDiv.innerHTML = "<div style='text-align:center; color:#94a3b8; padding:20px; font-style:italic;'>List is empty</div>";
-      totalDiv.innerText = "₹0";
-      return;
-  }
+  listDiv.innerHTML = ""; let total = 0; itemCountDiv.innerText = globalItems.length;
+  if(globalItems.length === 0){ listDiv.innerHTML = "<div style='text-align:center; color:gray; padding:20px;'>List is empty</div>"; totalDiv.innerText = "₹0"; return; }
 
   globalItems.forEach((it, i) => {
-    if(it.status === "done") total += Number(it.price || 0);
+    const p = it.price || it.p || "0";
+    const q = it.q || it.quantity || "";
+    if(it.status === "done") total += Number(p);
 
-    const div = document.createElement("div");
-    div.className = "item-card " + it.status;
-
-    // 🔥 Added Edit Icon SVG
-    const editIcon = `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
-    const trashIcon = `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
-
-    let qtyHtml = it.q ? `<span class="qty-text">(${it.q})</span>` : "";
+    const div = document.createElement("div"); div.className = "item-card " + it.status;
+    const editIcon = `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
+    const trashIcon = `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"></path></svg>`;
 
     div.innerHTML = `
       <div class="item-header">
-        <span class="item-text">${i+1}. ${it.name} ${qtyHtml}</span>
+        <span class="item-text">${getEmoji(it.name)} ${i+1}. ${it.name} ${q ? `<span class="qty-text">(${q})</span>` : ""}</span>
         <div class="status-wrap">
-            ${it.status !== 'pending' ? `<span class="status-label ${it.status}">${it.status === 'done' ? 'Available' : 'N/A'}</span>` : ''}
+            ${it.status !== 'pending' ? `<span class="status-label ${it.status}">${it.status === 'done' ? 'Avail' : 'N/A'}</span>` : ''}
             <div class="action-icons">
-                <span class="edit-icon" onclick="editItem(${i})" title="Edit Quantity">${editIcon}</span>
-                <span class="delete-icon" onclick="deleteItem(${i})" title="Delete Item">${trashIcon}</span>
+                <span class="edit-icon" onclick="editItem(${i})">${editIcon}</span>
+                <span class="delete-icon" onclick="deleteItem(${i})">${trashIcon}</span>
             </div>
         </div>
       </div>
-      <input type="number" class="price-input" placeholder="Price ₹" value="${it.price || ''}"
-        oninput="updatePrice(${i}, this.value)">
-      
-      ${it.status === "pending" ? `
-        <div class="row">
-          <button class="btn btn-avail" onclick="updateStatus(${i}, 'done')">Available</button>
-          <button class="btn btn-na" onclick="updateStatus(${i}, 'na')">N/A</button>
-        </div>
-      ` : ''}
+      <input type="number" class="price-input" placeholder="Price ₹" value="${p !== "0" ? p : ''}" oninput="updatePrice(${i}, this.value)">
+      ${it.status === "pending" ? `<div class="row"><button class="btn btn-avail" onclick="updateStatus(${i}, 'done')">Available</button><button class="btn btn-na" onclick="updateStatus(${i}, 'na')">N/A</button></div>` : ''}
     `;
     listDiv.appendChild(div);
   });
-
   totalDiv.innerText = "₹" + total;
 }
 
-// 🔥 Update Price
-window.updatePrice = function(i, val){
-  globalItems[i].price = val;
-  let total = 0;
-  globalItems.forEach(it => { if(it.status === "done") total += Number(it.price || 0); });
-  totalDiv.innerText = "₹" + total;
-  scheduleSync();
-}
+window.updatePrice = function(i, val){ globalItems[i].price = val; let t = 0; globalItems.forEach(it => { if(it.status === "done") t += Number(it.price || it.p || 0); }); totalDiv.innerText = "₹" + t; scheduleSync(); }
 
-// 🔥 Update Status
-window.updateStatus = function(i, stat){
-  globalItems[i].status = stat;
-  sortItems(); 
-  renderUI();
-  scheduleSync();
-}
+window.updateStatus = function(i, stat){ globalItems[i].status = stat; sortItems(); renderUI(); scheduleSync(); }
 
-// 🔥 Smart Cloud Sync
 function scheduleSync(){
   clearTimeout(syncTimeout);
   syncTimeout = setTimeout(() => {
-    if(uid){
-      const ref = db.collection("users").doc(uid);
-      
-      if (currentCategory === "Full List") {
-          let updates = {};
-          let rootItems = [];
-          let catGroups = {};
-
-          globalItems.forEach(it => {
-              let cleanItem = { name: it.name, price: it.price, status: it.status };
-              if (it.q) cleanItem.q = it.q; 
-              
-              if(it._cat === 'root') {
-                  rootItems.push(cleanItem);
-              } else {
-                  if(!catGroups[it._cat]) catGroups[it._cat] = [];
-                  catGroups[it._cat].push(cleanItem);
-              }
-          });
-
-          updates["items"] = rootItems;
-          Object.keys(catGroups).forEach(cat => {
-              updates["categories." + cat + ".items"] = catGroups[cat];
-          });
-          ref.update(updates).catch(e => console.log("Merge Update failed"));
-
-      } else if (currentCategory && currentCategory !== "root") {
-          let obj = {};
-          let cleanData = globalItems.map(it => {
-              let res = { name: it.name, price: it.price, status: it.status };
-              if(it.q) res.q = it.q;
-              return res;
-          });
-          obj["categories." + currentCategory + ".items"] = cleanData;
-          ref.update(obj).catch(() => {
-              let fallback = { categories: {} };
-              fallback.categories[currentCategory] = { items: cleanData };
-              ref.set(fallback, { merge: true });
-          });
-      } else {
-          let cleanData = globalItems.map(it => {
-              let res = { name: it.name, price: it.price, status: it.status };
-              if(it.q) res.q = it.q;
-              return res;
-          });
-          ref.update({ items: cleanData }).catch(() => {
-              ref.set({ items: cleanData }, { merge: true });
-          });
-      }
+    if(!uid) return;
+    const ref = db.collection("users").doc(uid);
+    const clean = globalItems.map(it => ({ name: it.name, q: it.q || it.quantity || "", price: it.price || it.p || "", status: it.status }));
+    
+    if (currentCategory === "Full List") {
+        let updates = {}; let root = []; let groups = {};
+        globalItems.forEach(it => { let c = { name: it.name, q: it.q||it.quantity||"", price: it.price||it.p||"", status: it.status }; if(it._cat === 'root') root.push(c); else { if(!groups[it._cat]) groups[it._cat] = []; groups[it._cat].push(c); } });
+        updates["items"] = root; Object.keys(groups).forEach(k => updates["categories." + k + ".items"] = groups[k]);
+        ref.update(updates);
+    } else if (currentCategory && currentCategory !== "root") {
+        let obj = {}; obj["categories." + currentCategory + ".items"] = clean; ref.update(obj);
+    } else {
+        ref.update({ items: clean });
     }
-  }, 400);
+  }, 1000);
 }
 </script>
-
 </body>
 </html>
