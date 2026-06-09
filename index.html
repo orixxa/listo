@@ -27,11 +27,6 @@ html.dark, body.dark {
 }
 
 html { background-color: var(--bg1); transition: background-color 0.3s ease; }
-body::before {
-  content: ""; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(-45deg, var(--bg1), var(--bg2), var(--bg3), var(--bg4));
-  background-size: 400% 400%; animation: bg 8s ease-in-out infinite; z-index: -1;
-}
 body { margin: 0; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 10px; box-sizing: border-box; min-height: 100vh; width: 100%; }
 
 .logo { width: 80px; height: auto; margin: 10px 0; }
@@ -47,10 +42,7 @@ body { margin: 0; font-family: system-ui, sans-serif; display: flex; flex-direct
 .status-offline { background: #fee2e2; color: #ef4444; }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-.cat-badge { text-align: center; font-size: 12px; font-weight: 700; color: var(--primary); background: #eef2ff; padding: 5px 15px; border-radius: 12px; margin-bottom: 15px; width: fit-content; margin: 0 auto; }
-body.dark .cat-badge { background: #312e81; color: #a5b4fc; }
-
-.item-card { background: var(--itemBg); padding: 15px; border-radius: 16px; margin-bottom: 12px; border: 1px solid var(--bg3); }
+.item-card { background: var(--itemBg); padding: 15px; border-radius: 16px; margin-bottom: 12px; border: 1px solid var(--bg3); position: relative; }
 .item-card.done { background: var(--doneBg); border-color: var(--doneBorder); }
 .item-card.na { background: var(--naBg); border-color: var(--naBorder); }
 
@@ -58,6 +50,8 @@ body.dark .cat-badge { background: #312e81; color: #a5b4fc; }
 .item-info { flex: 1; display: flex; flex-direction: column; }
 .item-name { font-size: 16px; font-weight: 700; }
 .item-qty { font-size: 12px; color: var(--primary); font-weight: bold; }
+
+.delete-btn { position: absolute; top: 10px; right: 10px; color: #94a3b8; cursor: pointer; border: none; background: none; font-size: 18px; }
 
 .price-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--inputBorder); background: var(--inputBg); color: var(--text); outline: none; margin-bottom: 10px; }
 .btn-group { display: flex; gap: 10px; }
@@ -78,19 +72,14 @@ body.dark .cat-badge { background: #312e81; color: #a5b4fc; }
             <div><span class="stat-lbl">Total</span><div id="total" class="stat-val">₹0</div></div>
         </div>
         <div id="syncIndicator" class="sync-status status-offline">
-            <div class="dot"></div> <span id="syncText">Connecting...</span>
+            <div class="dot"></div> <span id="syncText">Syncing...</span>
         </div>
     </div>
-
-    <div id="catDisplay" class="cat-badge">Loading...</div>
-    <div id="list">
-        <div style="text-align:center; color:gray; padding:20px;">Setting up your list...</div>
-    </div>
+    <div id="list"></div>
   </div>
 </div>
 
 <script>
-// 1. Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyBbBsz8FgD6_5WKbCvfqtEkPLa9q_PIhuA",
   authDomain: "listo-356ba.firebaseapp.com",
@@ -102,57 +91,29 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// 2. State & Params
 const params = new URLSearchParams(location.search);
 const uid = params.get("uid");
 const ocn = params.get("ocn") || "";
-const itemsParam = params.get("items");
 let globalItems = [];
 let syncTimeout;
 
-const emojiMap = { "apple":"🍎","milk":"🥛","egg":"🥚","bread":"🍞","water":"💧","onion":"🧅","potato":"🥔","tomato":"🍅","oil":"🧴","sugar":"🍬","salt":"🧂","chicken":"🍗","meat":"🥩","fish":"🐟","soap":"🧼","shampoo":"🧴","medicine":"💊","pen":"🖊️" };
 function getEmoji(name) {
+    const emojiMap = { "apple":"🍎","milk":"🥛","egg":"🥚","bread":"🍞","water":"💧","onion":"🧅","potato":"🥔","tomato":"🍅","oil":"🧴","sugar":"🍬","salt":"🧂","chicken":"🍗","meat":"🥩","fish":"🐟","soap":"🧼","shampoo":"🧴","medicine":"💊","pen":"🖊️" };
     const n = name.toLowerCase();
     for (let k in emojiMap) if (n.includes(k)) return emojiMap[k];
     return "🛒";
 }
 
-// 3. 🚀 Fast Load from URL (Firebase के इंतज़ार के बिना)
-if (itemsParam) {
-    globalItems = itemsParam.split(';').map(it => {
-        const parts = it.split('|');
-        return { name: decodeURIComponent(parts[0]), q: decodeURIComponent(parts[1] || ""), price: "", status: "pending" };
-    });
-    document.getElementById("catDisplay").innerText = ocn || "Shared List";
-    renderUI();
-}
-
-// 4. 🔥 Firebase Live Listener
 if (uid) {
     db.collection("users").doc(uid).onSnapshot(doc => {
         if (doc.exists) {
             document.getElementById("syncIndicator").className = "sync-status status-online";
             document.getElementById("syncText").innerText = "Live Sync";
-            
             const data = doc.data();
-            let newItems = [];
-            
-            if (ocn === "" || ocn === "Show Item") {
-                newItems = data.items || [];
-                document.getElementById("catDisplay").innerText = "Main List";
-            } else if (data.categories && data.categories[ocn]) {
-                newItems = data.categories[ocn].items || [];
-                document.getElementById("catDisplay").innerText = ocn;
-            }
-            
-            if (newItems.length > 0) {
-                globalItems = newItems;
-                renderUI();
-            }
+            if (ocn === "" || ocn === "Show Item") globalItems = data.items || [];
+            else if (data.categories && data.categories[ocn]) globalItems = data.categories[ocn].items || [];
+            renderUI();
         }
-    }, err => {
-        document.getElementById("syncText").innerText = "Cloud Error";
-        console.error("Firebase Error:", err);
     });
 }
 
@@ -160,50 +121,68 @@ function renderUI() {
     const listDiv = document.getElementById("list");
     listDiv.innerHTML = "";
     let total = 0;
-    
     document.getElementById("count").innerText = globalItems.length;
 
     globalItems.forEach((it, i) => {
-        if (it.status === "done") total += Number(it.price || 0);
+        const itemPrice = it.price || it.p || "0";
+        const itemQty = it.q || it.quantity || "";
+        if (it.status === "done") total += Number(itemPrice);
+
         const card = document.createElement("div");
         card.className = `item-card ${it.status}`;
         card.innerHTML = `
+            <button class="delete-btn" onclick="deleteItem(${i})">×</button>
             <div class="item-row">
                 <span class="item-emoji">${getEmoji(it.name)}</span>
                 <div class="item-info">
                     <span class="item-name">${it.name}</span>
-                    <span class="item-qty">${it.q || ''}</span>
+                    <span class="item-qty">${itemQty}</span>
                 </div>
-                ${it.status !== 'pending' ? `<span class="stat-lbl">${it.status==='done'?'Available':'N/A'}</span>` : ''}
             </div>
-            <input type="number" class="price-input" value="${it.price || ''}" placeholder="Price ₹" oninput="updateLocal(${i}, 'price', this.value)">
+            <input type="number" class="price-input" value="${itemPrice !== "0" ? itemPrice : ''}" placeholder="Price ₹" oninput="updateLocal(${i}, 'price', this.value)">
             ${it.status === 'pending' ? `
                 <div class="btn-group">
                     <button class="btn btn-avail" onclick="updateLocal(${i}, 'status', 'done')">Available</button>
                     <button class="btn btn-na" onclick="updateLocal(${i}, 'status', 'na')">N/A</button>
                 </div>
-            ` : ''}
+            ` : `<div style="font-size:10px; font-weight:bold; color:gray; text-transform:uppercase;">${it.status==='done'?'Available':'Not Available'}</div>`}
         `;
         listDiv.appendChild(card);
     });
     document.getElementById("total").innerText = "₹" + total;
 }
 
+window.deleteItem = function(idx) {
+    if(confirm("Delete this item?")) {
+        globalItems.splice(idx, 1);
+        renderUI();
+        saveToCloud();
+    }
+}
+
 window.updateLocal = function(idx, field, val) {
     globalItems[idx][field] = val;
     if (field === 'status') renderUI();
-    
-    let t = 0; globalItems.forEach(it => { if(it.status==='done') t += Number(it.price||0); });
-    document.getElementById("total").innerText = "₹" + t;
+    saveToCloud();
+};
 
+function saveToCloud() {
     clearTimeout(syncTimeout);
     syncTimeout = setTimeout(() => {
         if (!uid) return;
         const ref = db.collection("users").doc(uid);
-        if (ocn === "" || ocn === "Show Item") ref.update({ items: globalItems });
-        else ref.update({ [`categories.${ocn}.items`]: globalItems });
-    }, 1000);
-};
+        // ऐप के फॉर्मेट (name, q, price, status) के साथ सिंक करना
+        const clean = globalItems.map(it => ({ 
+            name: it.name, 
+            q: it.q || it.quantity || "", 
+            price: it.price || it.p || "", 
+            status: it.status 
+        }));
+        
+        if (ocn === "" || ocn === "Show Item") ref.update({ items: clean });
+        else ref.update({ [`categories.${ocn}.items`]: clean });
+    }, 800);
+}
 </script>
 </body>
 </html>
