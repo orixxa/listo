@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Listo - Live Shared List</title>
 
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
@@ -34,14 +33,12 @@ body::before {
   background-size: 400% 400%; animation: bg 8s ease-in-out infinite; z-index: -1;
 }
 body { margin: 0; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 10px; box-sizing: border-box; min-height: 100vh; width: 100%; }
-@keyframes bg { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
-.logo { width: 80px; height: auto; margin: 10px 0; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+.logo { width: 80px; height: auto; margin: 10px 0; }
 .container { max-width: 500px; width: 100%; }
 .card { background: var(--card); color: var(--text); padding: 15px 20px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box; }
 
 .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.stats { display: flex; flex-direction: column; gap: 2px; }
 .stat-lbl { font-size: 10px; font-weight: 800; color: #16a34a; text-transform: uppercase; }
 .stat-val { font-size: 14px; font-weight: 900; }
 
@@ -49,29 +46,24 @@ body { margin: 0; font-family: system-ui, sans-serif; display: flex; flex-direct
 .status-online { background: #dcfce7; color: #16a34a; }
 .status-offline { background: #fee2e2; color: #ef4444; }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.pulse { animation: pulse 1.5s infinite; }
-@keyframes pulse { 0% { transform: scale(0.9); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.5; } 100% { transform: scale(0.9); opacity: 1; } }
 
-.cat-badge { text-align: center; font-size: 12px; font-weight: 700; color: var(--primary); background: #eef2ff; padding: 5px 15px; border-radius: 12px; margin-bottom: 15px; width: fit-content; margin-left: auto; margin-right: auto; }
+.cat-badge { text-align: center; font-size: 12px; font-weight: 700; color: var(--primary); background: #eef2ff; padding: 5px 15px; border-radius: 12px; margin-bottom: 15px; width: fit-content; margin: 0 auto; }
 body.dark .cat-badge { background: #312e81; color: #a5b4fc; }
 
-.item-card { background: var(--itemBg); padding: 15px; border-radius: 16px; margin-bottom: 12px; border: 1px solid var(--bg3); transition: 0.2s; }
+.item-card { background: var(--itemBg); padding: 15px; border-radius: 16px; margin-bottom: 12px; border: 1px solid var(--bg3); }
 .item-card.done { background: var(--doneBg); border-color: var(--doneBorder); }
 .item-card.na { background: var(--naBg); border-color: var(--naBorder); }
 
 .item-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.item-emoji { font-size: 22px; }
 .item-info { flex: 1; display: flex; flex-direction: column; }
 .item-name { font-size: 16px; font-weight: 700; }
 .item-qty { font-size: 12px; color: var(--primary); font-weight: bold; }
 
-.price-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--inputBorder); background: var(--inputBg); color: var(--text); outline: none; font-size: 14px; margin-bottom: 10px; }
+.price-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--inputBorder); background: var(--inputBg); color: var(--text); outline: none; margin-bottom: 10px; }
 .btn-group { display: flex; gap: 10px; }
-.btn { flex: 1; padding: 12px; border: none; border-radius: 10px; color: white; font-weight: 800; cursor: pointer; font-size: 12px; }
+.btn { flex: 1; padding: 12px; border: none; border-radius: 10px; color: white; font-weight: 800; cursor: pointer; }
 .btn-avail { background: #22c55e; }
 .btn-na { background: #ef4444; }
-
-.footer-text { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 20px; font-weight: 500; }
 </style>
 </head>
 <body>
@@ -81,22 +73,20 @@ body.dark .cat-badge { background: #312e81; color: #a5b4fc; }
 <div class="container">
   <div class="card">
     <div class="header-top">
-      <div class="stats">
         <div style="display:flex; gap:10px;">
             <div><span class="stat-lbl">Items</span><div id="count" class="stat-val">0</div></div>
             <div><span class="stat-lbl">Total</span><div id="total" class="stat-val">₹0</div></div>
         </div>
-      </div>
-      <div id="syncIndicator" class="sync-status status-offline">
-        <div class="dot pulse"></div> <span id="syncText">Connecting...</span>
-      </div>
-      <button onclick="toggleTheme()" style="background:none; border:none; font-size:20px; cursor:pointer;">🌓</button>
+        <div id="syncIndicator" class="sync-status status-offline">
+            <div class="dot"></div> <span id="syncText">Connecting...</span>
+        </div>
     </div>
 
     <div id="catDisplay" class="cat-badge">Loading...</div>
-    <div id="list"></div>
+    <div id="list">
+        <div style="text-align:center; color:gray; padding:20px;">Setting up your list...</div>
+    </div>
   </div>
-  <p class="footer-text">Listo: Making shopping digital & simple.</p>
 </div>
 
 <script>
@@ -112,20 +102,14 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// 2. URL Parameters
+// 2. State & Params
 const params = new URLSearchParams(location.search);
 const uid = params.get("uid");
-const ocn = params.get("ocn") || ""; // Original Category Name
+const ocn = params.get("ocn") || "";
+const itemsParam = params.get("items");
 let globalItems = [];
 let syncTimeout;
 
-function toggleTheme() {
-    document.body.classList.toggle("dark");
-    localStorage.setItem("theme", document.body.classList.contains("dark"));
-}
-if(localStorage.getItem("theme") === "true") document.body.classList.add("dark");
-
-// 3. Emoji System
 const emojiMap = { "apple":"🍎","milk":"🥛","egg":"🥚","bread":"🍞","water":"💧","onion":"🧅","potato":"🥔","tomato":"🍅","oil":"🧴","sugar":"🍬","salt":"🧂","chicken":"🍗","meat":"🥩","fish":"🐟","soap":"🧼","shampoo":"🧴","medicine":"💊","pen":"🖊️" };
 function getEmoji(name) {
     const n = name.toLowerCase();
@@ -133,49 +117,54 @@ function getEmoji(name) {
     return "🛒";
 }
 
-// 4. Update Sync Status UI
-function setStatus(online) {
-    const el = document.getElementById("syncIndicator");
-    const txt = document.getElementById("syncText");
-    el.className = `sync-status ${online ? 'status-online' : 'status-offline'}`;
-    txt.innerText = online ? "Live Sync" : "Offline";
+// 3. 🚀 Fast Load from URL (Firebase के इंतज़ार के बिना)
+if (itemsParam) {
+    globalItems = itemsParam.split(';').map(it => {
+        const parts = it.split('|');
+        return { name: decodeURIComponent(parts[0]), q: decodeURIComponent(parts[1] || ""), price: "", status: "pending" };
+    });
+    document.getElementById("catDisplay").innerText = ocn || "Shared List";
+    renderUI();
 }
 
-// 5. 🔥 Powerful Live Listener
+// 4. 🔥 Firebase Live Listener
 if (uid) {
     db.collection("users").doc(uid).onSnapshot(doc => {
         if (doc.exists) {
-            setStatus(true);
-            const data = doc.data();
+            document.getElementById("syncIndicator").className = "sync-status status-online";
+            document.getElementById("syncText").innerText = "Live Sync";
             
-            // Logic to find correct category
+            const data = doc.data();
+            let newItems = [];
+            
             if (ocn === "" || ocn === "Show Item") {
-                globalItems = data.items || [];
+                newItems = data.items || [];
                 document.getElementById("catDisplay").innerText = "Main List";
             } else if (data.categories && data.categories[ocn]) {
-                globalItems = data.categories[ocn].items || [];
+                newItems = data.categories[ocn].items || [];
                 document.getElementById("catDisplay").innerText = ocn;
-            } else {
-                document.getElementById("catDisplay").innerText = "Category not found";
             }
-            renderUI();
+            
+            if (newItems.length > 0) {
+                globalItems = newItems;
+                renderUI();
+            }
         }
     }, err => {
-        console.error(err);
-        setStatus(false);
+        document.getElementById("syncText").innerText = "Cloud Error";
+        console.error("Firebase Error:", err);
     });
 }
 
 function renderUI() {
     const listDiv = document.getElementById("list");
     listDiv.innerHTML = "";
-    let totalSpent = 0;
+    let total = 0;
     
     document.getElementById("count").innerText = globalItems.length;
 
     globalItems.forEach((it, i) => {
-        if (it.status === "done") totalSpent += Number(it.price || 0);
-        
+        if (it.status === "done") total += Number(it.price || 0);
         const card = document.createElement("div");
         card.className = `item-card ${it.status}`;
         card.innerHTML = `
@@ -183,11 +172,11 @@ function renderUI() {
                 <span class="item-emoji">${getEmoji(it.name)}</span>
                 <div class="item-info">
                     <span class="item-name">${it.name}</span>
-                    ${it.q ? `<span class="item-qty">${it.q}</span>` : ''}
+                    <span class="item-qty">${it.q || ''}</span>
                 </div>
-                ${it.status !== 'pending' ? `<span class="status-label ${it.status}">${it.status==='done'?'Available':'N/A'}</span>` : ''}
+                ${it.status !== 'pending' ? `<span class="stat-lbl">${it.status==='done'?'Available':'N/A'}</span>` : ''}
             </div>
-            <input type="number" class="price-input" value="${it.price || ''}" placeholder="Enter Price ₹" oninput="updateLocal(${i}, 'price', this.value)">
+            <input type="number" class="price-input" value="${it.price || ''}" placeholder="Price ₹" oninput="updateLocal(${i}, 'price', this.value)">
             ${it.status === 'pending' ? `
                 <div class="btn-group">
                     <button class="btn btn-avail" onclick="updateLocal(${i}, 'status', 'done')">Available</button>
@@ -197,35 +186,24 @@ function renderUI() {
         `;
         listDiv.appendChild(card);
     });
-    document.getElementById("total").innerText = "₹" + totalSpent;
+    document.getElementById("total").innerText = "₹" + total;
 }
 
-// 6. Typing and Status Update
 window.updateLocal = function(idx, field, val) {
     globalItems[idx][field] = val;
-    if (field === 'status') renderUI(); 
+    if (field === 'status') renderUI();
     
-    // Update total immediately for UI feel
     let t = 0; globalItems.forEach(it => { if(it.status==='done') t += Number(it.price||0); });
     document.getElementById("total").innerText = "₹" + t;
 
-    scheduleCloudSync();
-};
-
-function scheduleCloudSync() {
     clearTimeout(syncTimeout);
     syncTimeout = setTimeout(() => {
         if (!uid) return;
         const ref = db.collection("users").doc(uid);
-        const clean = globalItems.map(it => ({ name: it.name, q: it.q || "", price: it.price || "", status: it.status }));
-        
-        if (ocn === "" || ocn === "Show Item") {
-            ref.update({ items: clean });
-        } else {
-            ref.update({ [`categories.${ocn}.items`]: clean });
-        }
-    }, 800); 
-}
+        if (ocn === "" || ocn === "Show Item") ref.update({ items: globalItems });
+        else ref.update({ [`categories.${ocn}.items`]: globalItems });
+    }, 1000);
+};
 </script>
 </body>
 </html>
