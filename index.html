@@ -148,14 +148,15 @@ function getEmoji(name) {
     return "🛒";
 }
 
-// 2. Firebase Init
+// 2. Firebase Init (CRITICAL FIX: 100% Exact Live Web Credentials)
 const firebaseConfig = {
-  apiKey: "AIzaSyBbBsz8FgD6_5WKbCvfqtEkPLa9q_PIhuA",
-  authDomain: "listo-356ba.firebaseapp.com",
-  projectId: "listo-356ba",
-  storageBucket: "listo-356ba.firebasestorage.app",
-  messagingSenderId: "104729909475",
-  appId: "1:104729909475:web:fb3bd44800d371b7748dd6"
+  apiKey: "AIzaSyCn0aAgZMj3BNRXB3Z78wVJQSxoyhIzB8*",
+  authDomain: "listo-19ff4.firebaseapp.com",
+  databaseURL: "https://listo-19ff4-default-rtdb.firebaseio.com",
+  projectId: "listo-19ff4",
+  storageBucket: "listo-19ff4.firebasestorage.app",
+  messagingSenderId: "296989598922",
+  appId: "1:296989598922:web:55cfd5bf850b1f66238033"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -214,7 +215,7 @@ if(itemsParam) {
   } catch(e) { listDiv.innerHTML = "Error parsing QR"; }
 }
 
-// 4. Firestore Sync (Fixed for Realtime App Updates)
+// 4. Firestore Realtime Sync (CORE LOGIC DECODE MATRIX FIXED)
 if(uid){
   document.getElementById("liveTag").style.display = "flex";
   db.collection("users").doc(uid).onSnapshot(doc => {
@@ -222,17 +223,26 @@ if(uid){
       const dObj = doc.data();
       let remoteItems = [];
       
+      // Dual Parsing Logic: Fallback mechanism for App (quantity/p) vs Web (q/price)
+      const parseItem = (it, cat) => ({
+        name: it.name || "",
+        q: it.quantity !== undefined ? it.quantity : (it.q !== undefined ? it.q : ""),
+        price: it.p !== undefined ? it.p : (it.price !== undefined ? it.price : ""),
+        status: it.status || "pending",
+        _cat: cat
+      });
+
       if(currentCategory === "Full List") {
-          (dObj.items || []).forEach(it => remoteItems.push({ name: it.name, q: it.q || it.quantity || "", price: it.price || it.p || "", status: it.status || "pending", _cat: 'root' }));
+          (dObj.items || []).forEach(it => remoteItems.push(parseItem(it, 'root')));
           if(dObj.categories) {
               Object.keys(dObj.categories).forEach(k => {
-                  (dObj.categories[k].items || []).forEach(it => remoteItems.push({ name: it.name, q: it.q || it.quantity || "", price: it.price || it.p || "", status: it.status || "pending", _cat: k }));
+                  (dObj.categories[k].items || []).forEach(it => remoteItems.push(parseItem(it, k)));
               });
           }
       } else if (currentCategory && currentCategory !== "root" && dObj.categories && dObj.categories[currentCategory]) {
-          remoteItems = (dObj.categories[currentCategory].items || []).map(it => ({ name: it.name, q: it.q || it.quantity || "", price: it.price || it.p || "", status: it.status || "pending", _cat: currentCategory }));
+          remoteItems = (dObj.categories[currentCategory].items || []).map(it => parseItem(it, currentCategory));
       } else {
-          remoteItems = (dObj.items || []).map(it => ({ name: it.name, q: it.q || it.quantity || "", price: it.price || it.p || "", status: it.status || "pending", _cat: 'root' }));
+          remoteItems = (dObj.items || []).map(it => parseItem(it, 'root'));
       }
       
       globalItems = remoteItems;
@@ -293,6 +303,16 @@ function scheduleSync(){
     if(!uid) return;
     const ref = db.collection("users").doc(uid);
     
+    // Writes down dual mapping properties (p/quantity AND price/q) to secure full integration
+    const buildCleanList = (list) => list.map(it => ({
+        name: it.name,
+        q: it.q || "",
+        quantity: it.q || "",
+        price: it.price || "",
+        p: it.price || "",
+        status: it.status
+    }));
+
     if (currentCategory === "Full List") {
         let updates = {}; let root = []; let groups = {};
         globalItems.forEach(it => { 
@@ -308,12 +328,10 @@ function scheduleSync(){
         ref.update(updates);
     } else if (currentCategory && currentCategory !== "root") {
         let obj = {}; 
-        let clean = globalItems.map(it => ({ name: it.name, q: it.q || "", quantity: it.q || "", price: it.price || "", p: it.price || "", status: it.status }));
-        obj["categories." + currentCategory + ".items"] = clean; 
+        obj["categories." + currentCategory + ".items"] = buildCleanList(globalItems); 
         ref.update(obj);
     } else {
-        let clean = globalItems.map(it => ({ name: it.name, q: it.q || "", quantity: it.q || "", price: it.price || "", p: it.price || "", status: it.status }));
-        ref.update({ items: clean });
+        ref.update({ items: buildCleanList(globalItems) });
     }
   }, 1000);
 }
